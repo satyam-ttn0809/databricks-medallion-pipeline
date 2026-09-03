@@ -8,7 +8,7 @@
 | 3. Data Generation | APPROVED |
 | 4. Bronze Layer | APPROVED |
 | 5. Silver & Data Quality | APPROVED |
-| 6. Gold Layer | NOT_STARTED |
+| 6. Gold Layer | APPROVED |
 | 7. Dashboard | NOT_STARTED |
 | 8. Testing & Validation | NOT_STARTED |
 | 9. Debugging & Refinement | NOT_STARTED |
@@ -17,19 +17,19 @@
 
 ## Current Phase
 
-PHASE 5
+PHASE 6
 
 ## Current Task
 
-Silver layer and data quality
+Gold layer aggregations
 
 ## Next Gate
 
-Silver validation on Databricks
+Gold validation on Databricks
 
 ## Next Phase
 
-PHASE 6 — Gold Layer
+PHASE 7 — Dashboard
 
 ## Rules
 
