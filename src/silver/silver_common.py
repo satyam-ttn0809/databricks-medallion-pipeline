@@ -25,7 +25,7 @@ def get_spark() -> SparkSession:
 
 
 def bronze_table_name(table_name: str) -> str:
-    return f"{CATALOG}.{BRONZE_SCHEMA}.{table_name}"
+    return f"`{CATALOG}`.`{BRONZE_SCHEMA}`.`{table_name}`"
 
 
 def _silver_path(table_name: str) -> str:
@@ -54,9 +54,10 @@ def _check_path_exists(spark: SparkSession, path: str) -> None:
 def read_bronze(spark: SparkSession, table_name: str) -> DataFrame:
     target_table = bronze_table_name(table_name)
     logger.info("Reading Bronze table %s", target_table)
-    if not spark.catalog.tableExists(target_table):
-        raise FileNotFoundError(f"Bronze table not found: {target_table}")
-    return spark.table(target_table)
+    try:
+        return spark.table(target_table)
+    except Exception as exc:
+        raise FileNotFoundError(f"Bronze table not found: {target_table}") from exc
 
 
 def write_silver(df: DataFrame, table_name: str) -> int:

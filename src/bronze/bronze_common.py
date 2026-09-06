@@ -74,8 +74,8 @@ def get_spark() -> SparkSession:
 
 
 def bronze_table_name(table_name: str) -> str:
-    """Unity Catalog three-part table name."""
-    return f"{CATALOG}.{BRONZE_SCHEMA}.{table_name}"
+    """Unity Catalog three-part table name (quoted for hyphenated catalog)."""
+    return f"`{CATALOG}`.`{BRONZE_SCHEMA}`.`{table_name}`"
 
 
 def _source_path(filename: str) -> str:
