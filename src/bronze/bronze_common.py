@@ -21,7 +21,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 RAW_DATA_PATH = "/Volumes/ai-data_assesment/data-location/raw-data"
-BRONZE_OUTPUT_PATH = "/Volumes/ai-data_assesment/data-location/bronze"
+BRONZE_OUTPUT_PATH = "/ai-assesment-medillion-structure.bronze"
 
 CUSTOMERS_SCHEMA = StructType(
     [
@@ -80,13 +80,21 @@ def _bronze_path(table_name: str) -> str:
     return f"{BRONZE_OUTPUT_PATH.rstrip('/')}/{table_name}"
 
 
-def _check_source_exists(source_path: str) -> None:
+def _get_dbutils(spark: SparkSession):
+    """Return dbutils in notebooks and Python job tasks."""
     try:
-        dbutils.fs.ls(source_path)  # type: ignore[name-defined]  # noqa: F821
-    except NameError as exc:
-        raise RuntimeError(
-            "dbutils is required to verify source paths on Databricks."
-        ) from exc
+        from pyspark.dbutils import DBUtils
+
+        return DBUtils(spark)
+    except ImportError:
+        import IPython
+
+        return IPython.get_ipython().user_ns["dbutils"]
+
+
+def _check_source_exists(spark: SparkSession, source_path: str) -> None:
+    try:
+        _get_dbutils(spark).fs.ls(source_path)
     except Exception as exc:
         raise FileNotFoundError(f"Source path not found: {source_path}") from exc
 
@@ -103,7 +111,7 @@ def ingest_csv_to_bronze(
     output_path = _bronze_path(table_name)
 
     logger.info("Starting Bronze ingestion for %s from %s", table_name, source_path)
-    _check_source_exists(source_path)
+    _check_source_exists(spark, source_path)
 
     df = (
         spark.read.option("header", True)

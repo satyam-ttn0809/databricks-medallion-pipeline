@@ -31,13 +31,21 @@ def _gold_path(table_name: str) -> str:
     return f"{GOLD_OUTPUT_PATH.rstrip('/')}/{table_name}"
 
 
-def _check_path_exists(path: str) -> None:
+def _get_dbutils(spark: SparkSession):
+    """Return dbutils in notebooks and Python job tasks."""
     try:
-        dbutils.fs.ls(path)  # type: ignore[name-defined]  # noqa: F821
-    except NameError as exc:
-        raise RuntimeError(
-            "dbutils is required to verify table paths on Databricks."
-        ) from exc
+        from pyspark.dbutils import DBUtils
+
+        return DBUtils(spark)
+    except ImportError:
+        import IPython
+
+        return IPython.get_ipython().user_ns["dbutils"]
+
+
+def _check_path_exists(spark: SparkSession, path: str) -> None:
+    try:
+        _get_dbutils(spark).fs.ls(path)
     except Exception as exc:
         raise FileNotFoundError(f"Path not found: {path}") from exc
 
@@ -45,7 +53,7 @@ def _check_path_exists(path: str) -> None:
 def read_silver(spark: SparkSession, table_name: str) -> DataFrame:
     path = _silver_path(table_name)
     logger.info("Reading Silver table from %s", path)
-    _check_path_exists(path)
+    _check_path_exists(spark, path)
     return spark.read.format("delta").load(path)
 
 
