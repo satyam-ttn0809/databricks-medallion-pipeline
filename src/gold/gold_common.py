@@ -10,8 +10,9 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-SILVER_OUTPUT_PATH = "/Volumes/ai-data_assesment/data-location/silver"
-GOLD_OUTPUT_PATH = "/Volumes/ai-data_assesment/data-location/gold"
+CATALOG = "ai-assesment-medillion-structure"
+SILVER_SCHEMA = "silver"
+GOLD_SCHEMA = "gold"
 
 
 def get_spark() -> SparkSession:
@@ -23,43 +24,28 @@ def get_spark() -> SparkSession:
     return session
 
 
-def _silver_path(table_name: str) -> str:
-    return f"{SILVER_OUTPUT_PATH.rstrip('/')}/{table_name}"
+def silver_table_name(table_name: str) -> str:
+    return f"`{CATALOG}`.`{SILVER_SCHEMA}`.`{table_name}`"
 
 
-def _gold_path(table_name: str) -> str:
-    return f"{GOLD_OUTPUT_PATH.rstrip('/')}/{table_name}"
-
-
-def _get_dbutils(spark: SparkSession):
-    """Return dbutils in notebooks and Python job tasks."""
-    try:
-        from pyspark.dbutils import DBUtils
-
-        return DBUtils(spark)
-    except ImportError:
-        import IPython
-
-        return IPython.get_ipython().user_ns["dbutils"]
-
-
-def _check_path_exists(spark: SparkSession, path: str) -> None:
-    try:
-        _get_dbutils(spark).fs.ls(path)
-    except Exception as exc:
-        raise FileNotFoundError(f"Path not found: {path}") from exc
+def gold_table_name(table_name: str) -> str:
+    return f"`{CATALOG}`.`{GOLD_SCHEMA}`.`{table_name}`"
 
 
 def read_silver(spark: SparkSession, table_name: str) -> DataFrame:
-    path = _silver_path(table_name)
-    logger.info("Reading Silver table from %s", path)
-    _check_path_exists(spark, path)
-    return spark.read.format("delta").load(path)
+    target_table = silver_table_name(table_name)
+    logger.info("Reading Silver table %s", target_table)
+    try:
+        return spark.table(target_table)
+    except Exception as exc:
+        raise FileNotFoundError(f"Silver table not found: {target_table}") from exc
 
 
 def write_gold(df: DataFrame, table_name: str) -> int:
-    path = _gold_path(table_name)
+    target_table = gold_table_name(table_name)
     row_count = df.count()
-    logger.info("Writing Gold table %s (%s rows) to %s", table_name, row_count, path)
-    df.write.format("delta").mode("overwrite").save(path)
+    logger.info("Writing Gold table %s (%s rows)", target_table, row_count)
+    df.write.format("delta").mode("overwrite").option("overwriteSchema", "true").saveAsTable(
+        target_table
+    )
     return row_count

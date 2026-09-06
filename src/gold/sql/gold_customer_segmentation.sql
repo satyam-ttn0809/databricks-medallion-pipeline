@@ -1,15 +1,14 @@
 -- Gold mart: Customer Segmentation
 -- Business rules: GOLD_BUSINESS_RULES.md
--- Source: Silver Delta tables
 
-CREATE OR REPLACE TABLE gold_customer_segmentation AS
+CREATE OR REPLACE TABLE `ai-assesment-medillion-structure`.gold.gold_customer_segmentation AS
 WITH customer_revenue AS (
     SELECT
         c.customer_id,
         c.customer_segment,
         CAST(SUM(o.total_amount) AS DECIMAL(18, 2)) AS customer_total_revenue
-    FROM delta.`/Volumes/ai-data_assesment/data-location/silver/silver_orders` o
-    INNER JOIN delta.`/Volumes/ai-data_assesment/data-location/silver/silver_customers` c
+    FROM `ai-assesment-medillion-structure`.silver.silver_orders o
+    INNER JOIN `ai-assesment-medillion-structure`.silver.silver_customers c
         ON o.customer_id = c.customer_id
     WHERE o.quality_status = 'PASS'
       AND o.order_status = 'Completed'
