@@ -10,7 +10,8 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
-BRONZE_OUTPUT_PATH = "/Volumes/ai-data_assesment/data-location/bronze"
+CATALOG = "ai-assesment-medillion-structure"
+BRONZE_SCHEMA = "bronze"
 SILVER_OUTPUT_PATH = "/Volumes/ai-data_assesment/data-location/silver"
 
 
@@ -23,8 +24,8 @@ def get_spark() -> SparkSession:
     return session
 
 
-def _bronze_path(table_name: str) -> str:
-    return f"{BRONZE_OUTPUT_PATH.rstrip('/')}/{table_name}"
+def bronze_table_name(table_name: str) -> str:
+    return f"{CATALOG}.{BRONZE_SCHEMA}.{table_name}"
 
 
 def _silver_path(table_name: str) -> str:
@@ -51,10 +52,11 @@ def _check_path_exists(spark: SparkSession, path: str) -> None:
 
 
 def read_bronze(spark: SparkSession, table_name: str) -> DataFrame:
-    path = _bronze_path(table_name)
-    logger.info("Reading Bronze table from %s", path)
-    _check_path_exists(spark, path)
-    return spark.read.format("delta").load(path)
+    target_table = bronze_table_name(table_name)
+    logger.info("Reading Bronze table %s", target_table)
+    if not spark.catalog.tableExists(target_table):
+        raise FileNotFoundError(f"Bronze table not found: {target_table}")
+    return spark.table(target_table)
 
 
 def write_silver(df: DataFrame, table_name: str) -> int:

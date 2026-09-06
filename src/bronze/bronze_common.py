@@ -21,7 +21,8 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 RAW_DATA_PATH = "/Volumes/ai-data_assesment/data-location/raw-data"
-BRONZE_OUTPUT_PATH = "/ai-assesment-medillion-structure.bronze"
+CATALOG = "ai-assesment-medillion-structure"
+BRONZE_SCHEMA = "bronze"
 
 CUSTOMERS_SCHEMA = StructType(
     [
@@ -72,12 +73,13 @@ def get_spark() -> SparkSession:
     return session
 
 
+def bronze_table_name(table_name: str) -> str:
+    """Unity Catalog three-part table name."""
+    return f"{CATALOG}.{BRONZE_SCHEMA}.{table_name}"
+
+
 def _source_path(filename: str) -> str:
     return f"{RAW_DATA_PATH.rstrip('/')}/{filename}"
-
-
-def _bronze_path(table_name: str) -> str:
-    return f"{BRONZE_OUTPUT_PATH.rstrip('/')}/{table_name}"
 
 
 def _get_dbutils(spark: SparkSession):
@@ -106,11 +108,11 @@ def ingest_csv_to_bronze(
     schema: StructType,
     table_name: str,
 ) -> int:
-    """Read a CSV with explicit schema and write a Bronze Delta table."""
+    """Read a CSV with explicit schema and write a Bronze Unity Catalog Delta table."""
     source_path = _source_path(source_filename)
-    output_path = _bronze_path(table_name)
+    target_table = bronze_table_name(table_name)
 
-    logger.info("Starting Bronze ingestion for %s from %s", table_name, source_path)
+    logger.info("Starting Bronze ingestion for %s from %s", target_table, source_path)
     _check_source_exists(spark, source_path)
 
     df = (
@@ -126,15 +128,16 @@ def ingest_csv_to_bronze(
     )
 
     row_count = bronze_df.count()
-    logger.info("Bronze %s row count before write: %s", table_name, row_count)
+    logger.info("Bronze %s row count before write: %s", target_table, row_count)
 
-    bronze_df.write.format("delta").mode("overwrite").save(output_path)
+    bronze_df.write.format("delta").mode("overwrite").option("overwriteSchema", "true").saveAsTable(
+        target_table
+    )
 
     logger.info(
-        "Bronze ingestion complete for %s: %s rows written to %s",
-        table_name,
+        "Bronze ingestion complete for %s: %s rows written",
+        target_table,
         row_count,
-        output_path,
     )
     return row_count
 
