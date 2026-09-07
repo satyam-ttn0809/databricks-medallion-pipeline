@@ -2,36 +2,33 @@
 
 ### Prompt
 
-START PHASE 5 — SILVER & DATA QUALITY.
-
-Verify PHASE 4 = APPROVED. Use requirements-analysis.md, design-notes.md, data-quality-strategy.md.
-
-Implement only Silver with completeness, uniqueness, referential integrity, and type/business validation. Flag bad records; produce measurable quality metrics. Create ai-prompts/silver.md.
-
-Do not implement Gold or Dashboard.
+START PHASE 5 — SILVER LAYER & DATA QUALITY (full prompt with cleaning, validation, trusted datasets, quarantine, blocking rules). Use only approved specification artifacts and Bronze implementation.
 
 ### AI Response Summary
 
-Verified Phase 4 APPROVED. Implemented Silver validation via `quality_checks.py` (DQ logic), `silver_common.py` (paths/I/O), and `validate_data.py` (orchestrator). All rows retained with `quality_status` and `quality_reason`. Metrics written to `silver_quality_metrics`. Script-level validation against data-quality-strategy.md; runtime execution deferred to Databricks.
+Verified Phase 4 APPROVED. Re-structured Silver as clean → validate → write pipeline. Approved artifacts define **flag-and-retain** (not business-value correction). Implemented `silver_cleaning.py` (pass-through + documented rules), `silver_pipeline.py`, updated orchestrator and entity scripts, SQL trusted/rejected views, quality summary SQL, and `SILVER_LAYER_RULES.md`.
 
 ### Accepted
 
-- Approved check matrix and failure codes from data-quality-strategy.md
-- Duplicate PK rule: row_number > 1 ordered by `_ingestion_timestamp`
-- RI reference set from all Bronze parent PK values
-- Silver output path parallel to Bronze volume: `/Volumes/ai-data_assesment/data-location/silver/`
-- Flag-not-delete pattern
+- data-quality-strategy.md: detect, flag, report; never silently delete
+- design-notes.md: all rows in Silver + `quality_status` / `quality_reason`
+- GA-5 duplicate rule: flag `row_number > 1` only
+- Unity Catalog reads/writes (matches Bronze implementation)
+- Trusted data = `quality_status = 'PASS'`; Gold filters PASS per GA-3
 
 ### Changed
 
-- Added `silver_common.py` for shared paths/I/O (mirrors Bronze `bronze_common.py` pattern)
+- Split cleaning (`silver_cleaning.py`) from validation (`quality_checks.py`) and orchestration (`silver_pipeline.py`)
+- Added `silver_*_trusted` and `silver_*_rejected` SQL views for traceability
+- Renamed orchestrator function to `run_silver_pipeline`
 
 ### Rejected
 
-- Silently deleting or filtering FAIL rows — violates FR-7
-- Additional DQ rules not in specification (total_amount consistency, payment_date, price >= cost)
+- NULL imputation, FK repair, enum correction — not defined in approved artifacts (would be invented cleaning)
+- Physical deletion of FAIL rows — violates FR-7 / design-notes
+- Separate quarantine Delta tables — not in approved data-model; views used instead for PASS/FAIL separation
 - Gold/Dashboard code — out of scope
 
 ### Reason
 
-Silver must detect and flag all intentional Phase 3 defects per approved DQ strategy while retaining full row auditability and measurable per-check metrics.
+Approved data-quality-strategy explicitly requires flagging bad records rather than silently deleting or correcting unspecified business values. "Cleaning" in this project is quality enforcement via validation flags and duplicate-PK resolution rule GA-5, not arbitrary data repair.
