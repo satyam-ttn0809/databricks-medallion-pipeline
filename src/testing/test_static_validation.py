@@ -142,6 +142,8 @@ def test_validate_orders_uses_distinct_fk_lookups() -> None:
     checks = _read(REPO_ROOT / "src/silver/quality_checks.py")
     orders_fn = checks.split("def validate_orders")[1].split("def build_metrics")[0]
     assert orders_fn.count(".distinct()") >= 2
+    assert "enriched.product_id" in orders_fn
+    assert "validate_orders changed row count" in orders_fn
 
 
 def test_silver_metrics_builder_exists() -> None:

@@ -2,33 +2,33 @@
 
 ### Prompt
 
-START PHASE 6 — GOLD LAYER.
-
-Verify PHASE 5 = APPROVED. Implement Sales by Product, Revenue by Customer, Customer Segmentation. Also implement trends query/file from repository structure. Create Gold SQL, table creation code, ai-prompts/gold.md. Establish business rules. Validate aggregations. No Dashboard.
+PHASE 6 — GOLD LAYER (master prompt). Verify Phases 0–5 APPROVED. Implement Gold consuming trusted Silver only. No assumptions. No Silver cleaning in Gold. No Dashboard. Mark READY_FOR_REVIEW until Databricks execution evidence.
 
 ### AI Response Summary
 
-Verified Phase 5 APPROVED. Documented business rules in `GOLD_BUSINESS_RULES.md`. Implemented `build_marts.py` (PySpark) and three SQL mart files. Added independent validation functions per mart. Trends query not implemented — not present in approved requirements or repository structure.
+Verified Phases 0–5 APPROVED. Reviewed existing Gold implementation against requirements-analysis.md, design-notes.md, data-model.md, data-quality-strategy.md, and Silver implementation. Gold code already implements three approved marts with GA-3 inclusion rules. Added GOLD_IMPLEMENTATION_NOTES.md. Clarified build_marts.py docstring on Silver/Gold boundary.
 
 ### Accepted
 
-- Gold inclusion rules: PASS Silver rows + Completed orders only (GA-3)
-- `lifetime_value_actual` = sum of qualifying order revenue (GA-2)
-- `segment_type` = `customer_segment` (A-6)
-- All-time aggregation grain
-- Gold output path: `/Volumes/ai-data_assesment/data-location/gold/`
+- Three Gold marts per specification (Sales by Product, Revenue by Customer, Customer Segmentation)
+- GA-3: PASS Silver rows + Completed orders for revenue metrics
+- GA-2: lifetime_value_actual = sum of qualifying order revenue
+- A-6: segment_type = customer_segment
+- Unity Catalog read/write pattern (matches Bronze/Silver)
+- SQL equivalents in src/gold/sql/
 
 ### Changed
 
-- N/A (initial Gold implementation)
+- Added GOLD_IMPLEMENTATION_NOTES.md
+- build_marts.py docstring clarifies Gold inclusion filter vs Silver cleaning
 
 ### Rejected
 
-- Trends query/file — not specified in approved artifacts; not invented
-- Including Cancelled/Pending orders in revenue — rejected per GA-3
-- Using source `lifetime_value` for `lifetime_value_actual` — rejected per GA-2
-- Dashboard code — out of scope
+- Trends query — not in approved specification
+- Additional marts/metrics/KPIs — not specified
+- Silver cleaning logic in Gold — violates phase boundary
+- Reading Bronze directly — Gold must consume Silver
 
 ### Reason
 
-Gold marts must follow approved Silver inclusion rules and metric definitions exactly. Unspecified trends requirement blocked per specification compliance rules.
+Gold implementation already aligned with approved artifacts. Phase 6 work is validation, documentation, and READY_FOR_REVIEW gate pending user Databricks execution.

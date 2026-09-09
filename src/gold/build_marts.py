@@ -1,7 +1,11 @@
 # Databricks notebook source
-"""Gold layer: build analytics marts from validated Silver data.
+"""Gold layer: build analytics marts from trusted Silver data.
 
-Business rules: see GOLD_BUSINESS_RULES.md
+Reads Silver tables only (no Bronze). Applies approved Gold inclusion rules
+(quality_status='PASS', order_status='Completed') per data-quality-strategy GA-3
+and design-notes.md — not Silver cleaning.
+
+Business rules: GOLD_BUSINESS_RULES.md
 """
 
 from __future__ import annotations

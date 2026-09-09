@@ -71,12 +71,25 @@ def validate_orders(
     valid_product_ids: DataFrame,
 ) -> DataFrame:
     """Apply completeness, referential integrity, uniqueness, and business validation to orders."""
-    customers = valid_customer_ids.select(F.col("customer_id").alias("_valid_customer_id"))
-    products = valid_product_ids.select(F.col("product_id").alias("_valid_product_id"))
+    # EC-3 / data-quality-strategy.md: FK sets from distinct Bronze PK values;
+    # dedupe prevents row multiplication when parent tables contain duplicate PKs.
+    customers = valid_customer_ids.select(
+        F.col("customer_id").alias("_valid_customer_id")
+    ).distinct()
+    products = valid_product_ids.select(
+        F.col("product_id").alias("_valid_product_id")
+    ).distinct()
 
-    enriched = (
-        df.join(customers, df.customer_id == customers._valid_customer_id, "left")
-        .join(products, df.product_id == products._valid_product_id, "left")
+    # Two-step joins on enriched (not original df) to preserve 1:1 row cardinality.
+    enriched = df.join(
+        customers,
+        df.customer_id == customers._valid_customer_id,
+        "left",
+    )
+    enriched = enriched.join(
+        products,
+        enriched.product_id == products._valid_product_id,
+        "left",
     )
 
     null_customer_id = F.col("customer_id").isNull()
@@ -96,8 +109,16 @@ def validate_orders(
             ("DUPLICATE_PK", duplicate_pk),
             ("INVALID_ORDER_STATUS", invalid_order_status),
         ],
-    )
-    return result.drop("_valid_customer_id", "_valid_product_id")
+    ).drop("_valid_customer_id", "_valid_product_id")
+
+    input_count = df.count()
+    output_count = result.count()
+    if input_count != output_count:
+        raise ValueError(
+            f"validate_orders changed row count ({input_count} -> {output_count}); "
+            "Silver must preserve all Bronze rows (FR-7, AC-6)."
+        )
+    return result
 
 
 def build_metrics(

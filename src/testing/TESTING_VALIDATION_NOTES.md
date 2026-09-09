@@ -99,4 +99,15 @@ Run in order after pipeline is populated:
 
 ## Defects
 
-No implementation defects identified during local/static validation. Databricks integration results pending user execution evidence. Record any variances in `debugging-notes.md` (Phase 9).
+D-1 (Silver orders row multiplication) identified during initial Databricks run — fixed in Phase 9. See `debugging-notes.md` and `DATABRICKS_VALIDATION_RESULTS.md`.
+
+## Databricks Execution Results
+
+**Status: ALL CHECKS PASSED** (user-confirmed, 2026-09-09)
+
+Full results documented in `DATABRICKS_VALIDATION_RESULTS.md`, including:
+
+- Bronze = Silver row counts (customers 10,010 / orders 100,020 / products 500)
+- Silver customers: FAIL 60, PASS 9,950
+- Per-check `silver_quality_metrics` match data-quality-strategy.md
+- Gold marts and dashboard queries pass
